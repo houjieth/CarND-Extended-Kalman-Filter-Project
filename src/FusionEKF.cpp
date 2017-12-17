@@ -70,16 +70,13 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       */
       double rho = measurement_pack.raw_measurements_[0];
       double phi = measurement_pack.raw_measurements_[1];
-      double rho_dot = measurement_pack.raw_measurements_[2];
 
-      // Get four measurements: px, py, vx, vy
+      // Get two measurements: px, py, vx, vy
       double px = rho * cos(phi);
       double py = rho * sin(phi);
-      double vx = rho_dot * cos(phi);
-      double vy = rho_dot * sin(phi);
 
-      // Save first measurement
-      ekf_.x_ << px, py, vx, vy;
+      // We don't think that Radar is good enough to give a good first estimate on vx and vy
+      ekf_.x_ << px, py, 0, 0;
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
       /**
@@ -158,11 +155,6 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
    */
 
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
-    // Update measurement
-    VectorXd measurement(3);
-    measurement << measurement_pack.raw_measurements_[0], measurement_pack.raw_measurements_[1],
-                   measurement_pack.raw_measurements_[2];
-
     // Update measurement noise covariance matrix
     ekf_.R_ = R_radar_;
 
@@ -170,12 +162,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     ekf_.H_ = MatrixXd(3, 4);
     ekf_.H_ = tools.CalculateJacobian(ekf_.x_);
 
-    ekf_.UpdateEKF(measurement);
+    ekf_.UpdateEKF(measurement_pack.raw_measurements_);
   } else { // Laser
-    // Update measurement
-    VectorXd measurement(2);
-    measurement << measurement_pack.raw_measurements_[0], measurement_pack.raw_measurements_[1];
-
     // Update measurement covariance matrix
     ekf_.R_ = R_laser_;
 
@@ -184,7 +172,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     ekf_.H_ << 1, 0, 0, 0,
                0, 1, 0, 0;
 
-    ekf_.Update(measurement);
+    ekf_.Update(measurement_pack.raw_measurements_);
   }
 
   // Update timestamp
