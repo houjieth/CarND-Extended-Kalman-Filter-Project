@@ -76,6 +76,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       double py = rho * sin(phi);
 
       // We don't think that Radar is good enough to give a good first estimate on vx and vy
+      // We can just leave them as 0, and we will refine the estimation with later measurements
       ekf_.x_ << px, py, 0, 0;
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
@@ -100,8 +101,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     // State covariance matrix. All of our four state variable are independent of each other
     ekf_.P_ << 1, 0, 0, 0,
                0, 1, 0, 0,
-               0, 0, 1000, 0,
-               0, 0, 0, 1000;
+               0, 0, 1, 0,
+               0, 0, 0, 1;
 
     previous_timestamp_ = cur_timestamp;
 
