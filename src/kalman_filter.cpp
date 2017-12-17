@@ -25,6 +25,8 @@ void KalmanFilter::Predict() {
   TODO:
     * predict the state
   */
+  x_ = F_ * x_;  // assume u is 0 for now
+  P_ = F_ * P_ * F_.transpose() + Q_;
 }
 
 void KalmanFilter::Update(const VectorXd &z) {
@@ -32,6 +34,17 @@ void KalmanFilter::Update(const VectorXd &z) {
   TODO:
     * update the state by using Kalman Filter equations
   */
+  // Calculate predicted measurement (i.e., h(x')) using predicted state
+  VectorXd h_x = H_ * x_;
+
+  // Update other Kalman filter matrices and vectors
+  VectorXd y = z - h_x;
+  MatrixXd S = H_ * P_ * H_.transpose() + R_;
+  MatrixXd K = P_ * H_.transpose() * S.inverse();
+  x_ = x_ + K * y;
+  auto x_size = x_.size();
+  MatrixXd I = MatrixXd::Identity(x_size, x_size);
+  P_ = (I - K * H_) * P_;
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
@@ -39,4 +52,23 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   TODO:
     * update the state by using Extended Kalman Filter equations
   */
+  // Calculate predicted measurement (i.e., h(x')) using predicted state (i.e., x')
+  double px = x_(0);
+  double py = x_(1);
+  double vx = x_(2);
+  double vy = x_(3);
+  double rho = sqrt(px * px + py * py);
+  double phi = atan(py / px);
+  double rho_dot = (px * vx + py * vy) / rho;
+  VectorXd h_x(3);
+  h_x << rho, phi, rho_dot;
+
+  // Update other Kalman filter matrices and vectors
+  VectorXd y = z - h_x;
+  MatrixXd S = H_ * P_ * H_.transpose() + R_;
+  MatrixXd K = P_ * H_.transpose() * S.inverse();
+  x_ = x_ + K * y;
+  auto x_size = x_.size();
+  MatrixXd I = MatrixXd::Identity(x_size, x_size);
+  P_ = (I - K * H_) * P_;
 }
